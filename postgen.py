@@ -52,6 +52,7 @@ def _get_submission_datetime(substr):
 
 def _get_start_end_datetime(date, year, time):
     parts = time.split()
+
     time = parts[0].split(":")
     hour = int(time[0])
     minute = int(time[1])
@@ -122,16 +123,20 @@ def _get_events(raw_sheet):
         # Do some validation to mitigate spam and throw out old events
         sbmn_datetime = _get_submission_datetime(revent['Timestamp'])
         start_datetime = _get_start_end_datetime(revent['Date'], sbmn_datetime.year, revent['Start Time'])
-        end_datetime = _get_start_end_datetime(revent['Date'], sbmn_datetime.year, revent['End Time'])
+        if revent['End Time'] != '':
+            end_datetime = _get_start_end_datetime(revent['Date'], sbmn_datetime.year, revent['End Time'])
 
-        if end_datetime < start_datetime:
-            end_datetime += datetime.timedelta(days=1)
+            if end_datetime < start_datetime:
+                end_datetime += datetime.timedelta(days=1)
 
-        # Check if the time is sensible / still relevent
-        if end_datetime < datetime.datetime.now():
-            continue
-        elif end_datetime < start_datetime:
-            continue
+            # Check if the time is sensible / still relevent
+            if end_datetime < datetime.datetime.now():
+                continue
+            elif end_datetime < start_datetime:
+                continue
+        else:
+            if start_datetime < datetime.datetime.now():
+                continue
 
         # Check if valid url
         url = revent['Link'].strip()
@@ -143,7 +148,8 @@ def _get_events(raw_sheet):
             continue
 
         revent['Start Time'] = start_datetime
-        revent['End Time'] = end_datetime
+        if revent['End Time'] != '':
+            revent['End Time'] = end_datetime
 
         del revent['Timestamp']
         del revent['Date']
